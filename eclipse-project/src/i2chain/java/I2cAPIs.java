@@ -70,15 +70,15 @@ public class I2cAPIs {
     private final String ERR_MSG_ARCHIVE_FILE_CREATION      = "Archive/i2c file creation failed.";
     private final String ERR_MSG_INFO_FILE_CREATION         = "info.json file creation failed.";
     
-    //  
-    // i2c_getAuthToken 
-    // 
-    //    SDK function provided by i2Chain to login a user and get the auth token. 
-    // 
-    // Return value: 
-    //         True for success 
-    //        False for a failure. In this case errorResponse contains the details about the error. 
-    //
+    /**  
+     * i2c_getAuthToken 
+     * 
+     * SDK function provided by i2Chain to login as a user and get an authentication token.
+     *     
+     * Return value: 
+     *    True for success 
+     *    False for a failure. In this case errorResponse contains the details about the error. 
+     */
 
     public Boolean i2c_getAuthToken (String             userName,        // Input
                                      String             password,        // Input
