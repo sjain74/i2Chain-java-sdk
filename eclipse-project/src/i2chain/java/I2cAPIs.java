@@ -300,6 +300,12 @@ public class I2cAPIs {
         File origFile = new File(filePath);
         File chFile = new File(i2cFilePath + "/" + origFile.getName() + ENC_FILE_EXTENSION);
         File infoFile = new File(i2cFilePath + "/" + FILE_INFO_FILE_NAME);
+        File i2cFile = new File(i2cFilePath + "/" + origFile.getName() + I2C_FILE_EXTENSION);
+        
+        // cleanup any previous files
+        chFile.delete();
+        infoFile.delete();
+        i2cFile.delete();
         
         if (! _encryptFile(plaintextDataKey.toString(), origFile, chFile, statusResponse))
         {
@@ -459,7 +465,7 @@ public class I2cAPIs {
     //    A private function to create a SHA-1 checksum/message-digest of a file.   
     //
     
-    private Boolean _createSha1Checksum(File                 origFile,      // Input
+    private Boolean _createSha1Checksum(File               origFile,        // Input
                                         StringBuilder      checksum,        // Output
                                         I2cStatusResponse  statusResponse)  // Output
     {
