@@ -31,44 +31,52 @@ import org.apache.hc.core5.http.HttpStatus;
 
 public class I2cAPIs {
     
-    private final String API_SERVER                         = "https://api.i2chain.com/";
-    private final String API_KEY_VALUE                      = "kLNWDrGhpCUVxqtK7jypmtCoPLYqDyNg";
+    private final String API_SERVER                             = "https://api.i2chain.com/";
+    private final String API_KEY_VALUE                          = "kLNWDrGhpCUVxqtK7jypmtCoPLYqDyNg";
     
-    private final String END_POINT_LOGIN                    = "auth/v2/login";
-    private final String END_POINT_GENERATE_DATA_KEY        = "file/generate/datakey";
-    private final String END_POINT_LOGOUT                   = "auth/logout";
+    private final String END_POINT_LOGIN                        = "auth/v2/login";
+    private final String END_POINT_GENERATE_DATA_KEY            = "file/generate/datakey";
+    private final String END_POINT_LOGOUT                       = "auth/logout";
+    private final String END_POINT_GENERATE_WEBLINK_ID          = "file/generate/threadId";
+    private final String END_POINT_SAVE_CHAIN_DATA              = "file/saveChainData";
     
-    private final String HEADER_CONTENT_TYPE                = "Content-Type";
-    private final String HEADER_API_KEY                     = "x-api-key";
-    private final String HEADER_AUTHORIZATION               = "Authorization";
-    private final String HEADER_APPLICATION_JSON            = "application/json";
+    private final String HEADER_CONTENT_TYPE                    = "Content-Type";
+    private final String HEADER_API_KEY                         = "x-api-key";
+    private final String HEADER_AUTHORIZATION                   = "Authorization";
+    private final String HEADER_APPLICATION_JSON                = "application/json";
     
-    private final String TAG_EMAIL                          = "email";
-    private final String TAG_PASSWORD                       = "password";
-    private final String TAG_TOKEN                          = "token";
-    private final String TAG_ID_TOKEN                       = "idToken";
-    private final String TAG_JWT_TOKEN                      = "jwtToken";
-    private final String TAG_DATA                           = "data";
-    private final String TAG_PLAIN_TEXT_DATA_KEY            = "plaintextDataKey";
-    private final String TAG_FILE_INFO_DOC_ID               = "docID";
-    private final String TAG_FILE_INFO_CHECKSUM             = "checksum";
-    private final String TAG_FILE_INFO_TYPE                 = "type";
-    private final String TAG_FILE_INFO_FILE_NAME            = "fileName";
+    private final String TAG_EMAIL                              = "email";
+    private final String TAG_PASSWORD                           = "password";
+    private final String TAG_TOKEN                              = "token";
+    private final String TAG_ID_TOKEN                           = "idToken";
+    private final String TAG_JWT_TOKEN                          = "jwtToken";
+    private final String TAG_DATA                               = "data";
+    private final String TAG_PLAIN_TEXT_DATA_KEY                = "plaintextDataKey";
+    private final String TAG_FILE_INFO_DOC_ID                   = "docID";
+    private final String TAG_FILE_INFO_CHECKSUM                 = "checksum";
+    private final String TAG_FILE_INFO_TYPE                     = "type";
+    private final String TAG_FILE_INFO_FILE_NAME                = "fileName";
+    private final String TAG_WEBLINK_ID                         = "threadId";
+    private final String TAG_USER_ID                            = "userId";
     
-    private final String ENCRYPTION_ALGORITHM               = "AES/CBC/PKCS5Padding";
-    private final String CHECKSUM_SHA1                      = "SHA1";
+    private final String ENCRYPTION_ALGORITHM                   = "AES/CBC/PKCS5Padding";
+    private final String CHECKSUM_SHA1                          = "SHA1";
     
-    private final String FILE_INFO_FILE_NAME                = "info.json";
-    private final String ENC_FILE_EXTENSION                 = ".ch";
-    private final String I2C_FILE_EXTENSION                 = ".i2c";
+    private final String FILE_INFO_FILE_NAME                    = "info.json";
+    private final String ENC_FILE_EXTENSION                     = ".ch";
+    private final String I2C_FILE_EXTENSION                     = ".i2c";
     
-    private final String ERR_MSG_CLIENT_SEND_LOGIN          = "Sending Login HTTP request failed.";
-    private final String ERR_MSG_CLIENT_SEND_LOGOUT         = "Sending Logout HTTP request failed.";
-    private final String ERR_MSG_CLIENT_SEND_GEN_DATA_KEY   = "Sending Generate Data Key HTTP request failed.";
-    private final String ERR_MSG_FILE_ENCRYPTION            = "File encryption failed.";
-    private final String ERR_MSG_CHECKSUM                   = "File checksum computation failed.";
-    private final String ERR_MSG_ARCHIVE_FILE_CREATION      = "Archive/i2c file creation failed.";
-    private final String ERR_MSG_INFO_FILE_CREATION         = "info.json file creation failed.";
+    private final String EM_CLIENT_SEND_LOGIN                   = "Sending Login HTTP request failed.";
+    private final String EM_CLIENT_SEND_LOGOUT                  = "Sending Logout HTTP request failed.";
+    private final String EM_CLIENT_SEND_GEN_DATA_KEY            = "Sending Generate Data Key HTTP request failed.";
+    private final String EM_CLIENT_SEND_GEN_WEBLINK_ID          = "Sending Generate Weblink ID HTTP request failed.";
+    private final String EM_CLIENT_SEND_SAVE_CHAIN_DATA         = "Sending Save Chain Data HTTP request failed.";
+    
+    private final String EM_FILE_ENCRYPTION                     = "File encryption failed.";
+    private final String EM_CHECKSUM                            = "File checksum computation failed.";
+    private final String EM_ARCHIVE_FILE_CREATION               = "Archive/i2c file creation failed.";
+    private final String EM_INFO_FILE_CREATION                  = "info.json file creation failed.";
+    private final String EM_CWL_INVALID_COMBINATION_OF_ARGS     = "Length of files, classifications, and docIds arrays does not match";
     
     /**  
      * i2c_getAuthToken 
@@ -118,60 +126,85 @@ public class I2cAPIs {
         {
             e.printStackTrace();
             statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
-            statusResponse.description = ERR_MSG_CLIENT_SEND_LOGIN;
+            statusResponse.description = EM_CLIENT_SEND_LOGIN;
             return false;
         }
     } 
     
-    //  
-    // i2c_ createAWebLink 
-    // 
-    //    SDK function provided by i2Chain to create a weblink for a given i2c file.  
-    // 
-    // Return value: 
-    //         True for success 
-    //        False for a failure. In this case errorResponse contains the details about the error. 
-    //
+    /**  
+     * i2c_createWebLink 
+     * 
+     * SDK function provided by i2Chain to create a weblink for a set of attachments files that are shared as i2c files. 
+     *     
+     * Return value: 
+     *    True for success 
+     *    False for a failure. In this case errorResponse contains the details about the error. 
+     */
 
-    public Boolean i2c_createAWebLink (String               authToken,       // Input
-                                       String               filePath,        // Input
-                                       String               classification,  // Input
-                                       StringBuilder        docId,           // Output
-                                       StringBuilder        webLink,         // Output
-                                       I2cStatusResponse    statusResponse)  // Output
+    public Boolean i2c_createWebLink (String               authToken,       // Input
+                                      String[]             filePaths,       // Input
+                                      String[]             classifications, // Input
+                                      String               i2cFilePath,     // Input
+                                      StringBuilder[]      docIds,          // Output
+                                      StringBuilder        webLink,         // Output
+                                      I2cStatusResponse    statusResponse)  // Output
 
     {
-        // use i2Chain REST API to create a weblink for a given i2c file
+        if ((filePaths.length != classifications.length) || (filePaths.length != docIds.length))
+        {
+            statusResponse.status = HttpStatus.SC_BAD_REQUEST;
+            statusResponse.description = EM_CWL_INVALID_COMBINATION_OF_ARGS;
+            return false;
+        }
         
-        // for each file:
-            // generate docID, get encryption key, create i2C file, call save chain data REST API
+        StringBuilder weblinkId = new StringBuilder();
+        StringBuilder userId = new StringBuilder();
         
-        // call createWeblink REST API with a thread ID.
+        if (! _getUserWeblinkId(authToken, userId, weblinkId, statusResponse))
+        {
+            return false;
+        }
         
-        // if all good, return True, else build errorResponse and return False
-        
-        String i2cFilePath = filePath;
+        JSONObject chainData = new JSONObject(); 
+        payloadObj.put(TAG_EMAIL, userName);
+        payloadObj.put(TAG_PASSWORD, password);
         
         if (_classifyAndChain(authToken, filePath, classification, i2cFilePath, docId, statusResponse)) {
             
         }
         
+        
+        { "userId": "ea167978-d664-464f-9911-62ed0ffc4b70",
+            "fileId": "E:\RES",
+            "fileName": "god123.pdf.i2c",
+            "fileSize": "2807",
+            "fileBuffer": "<file buffer data here>",
+            "filePath": "E:\RES",
+            "mimeType": "pdf",
+            "location": "Local",
+            "docId": "89b7749d-01fa-480a-8966-45391ba31425",
+            "checksum": "e45ff07163fc8caa22a7af496caa25ecdf4b64f2",
+            "ciphertext": "<cipher text here>",
+            "fileType": "pdf",
+            "classificationId": "5f60722c640fe94dbd7fca66",
+            "lastModified": "1620465280150.0007 "}
+        
         return true;
 
     }
     
-    //  
-    // i2c_recordSharing
-    // 
-    //    SDK function provided by i2Chain to record, in the i2Chain backend, sharing of a document with one or more recipients 
-    // 
-    // Return value: 
-    //         True for success 
-    //        False for a failure. In this case errorResponse contains the details about the error. 
-    //
+    /**  
+     * i2c_recordSharing 
+     * 
+     * SDK function provided by i2Chain to record, in the i2Chain backend, sharing of a document with one or more recipients 
+     *     
+     * Return value: 
+     *    True for success 
+     *    False for a failure. In this case errorResponse contains the details about the error. 
+     */
 
     public Boolean i2c_recordSharing (String            authToken,        // Input
-                                      Byte[]            docId,            // Input
+                                      String            threadId,          // Input
                                       String[]          recipients,       // Output
                                       I2cStatusResponse statusResponse)   // Output
 
@@ -183,15 +216,15 @@ public class I2cAPIs {
 
     }
     
-    //  
-    // i2c_recordSharing
-    // 
-    //    SDK function provided by i2Chain to fetch transaction logs from the i2Chain backend. 
-    // 
-    // Return value: 
-    //         True for success 
-    //        False for a failure. In this case errorResponse contains the details about the error. 
-    //
+    /**  
+     * i2c_getTransactionLogs 
+     * 
+     * SDK function provided by i2Chain to fetch transaction logs from the i2Chain backend. 
+     *     
+     * Return value: 
+     *    True for success 
+     *    False for a failure. In this case errorResponse contains the details about the error. 
+     */
 
     public Boolean i2c_getTransactionLogs (String                 authToken,            // Input
                                            String                 by,                   // Input
@@ -224,17 +257,16 @@ public class I2cAPIs {
         return true;
 
     } 
-
- 
-    //  
-    // i2c_logout
-    // 
-    //    SDK function provided by i2Chain to logout a user from the i2Chain backend. 
-    // 
-    // Return value: 
-    //         True for success 
-    //        False for a failure. In this case errorResponse contains the details about the error. 
-    //
+    
+    /**  
+     * i2c_getTransactionLogs 
+     * 
+     * SDK function provided by i2Chain to logout a user from the i2Chain backend.
+     *     
+     * Return value: 
+     *    True for success 
+     *    False for a failure. In this case errorResponse contains the details about the error. 
+     */
 
     public Boolean i2c_logout (String                authToken,        // Input
                                I2cStatusResponse     statusResponse)   // Output 
@@ -266,7 +298,7 @@ public class I2cAPIs {
         {
             e.printStackTrace();
             statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
-            statusResponse.description = ERR_MSG_CLIENT_SEND_LOGOUT;
+            statusResponse.description = EM_CLIENT_SEND_LOGOUT;
             return false;
         }
     }
@@ -343,7 +375,7 @@ public class I2cAPIs {
         {
             e.printStackTrace();
             statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
-            statusResponse.description = ERR_MSG_ARCHIVE_FILE_CREATION;
+            statusResponse.description = EM_ARCHIVE_FILE_CREATION;
             return false;
         }
         
@@ -389,7 +421,99 @@ public class I2cAPIs {
         {
             e.printStackTrace();
             statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
-            statusResponse.description = ERR_MSG_CLIENT_SEND_GEN_DATA_KEY;
+            statusResponse.description = EM_CLIENT_SEND_GEN_DATA_KEY;
+            return false;
+        }
+        return true;
+    }
+    
+    //  
+    // _getAWeblinkID 
+    // 
+    //    A private function to get a weblink ID from the i2Chain backend.  
+    // 
+    // Return value: 
+    //         True for success 
+    //        False for a failure. In this case errorResponse contains the details about the error. 
+    //
+    
+    private Boolean _getUserWeblinkId(String             authToken,        // Input
+                                      StringBuilder      userId,           // Output
+                                      StringBuilder      weblinkId,        // Output
+                                      I2cStatusResponse  statusResponse)   // Output
+    {
+        System.out.println("_getAWeblinkId");
+        
+        HttpClient client     = HttpClient.newHttpClient();
+        HttpRequest request   = HttpRequest.newBuilder(URI.create(API_SERVER + END_POINT_GENERATE_WEBLINK_ID))
+                                           .header(HEADER_AUTHORIZATION, authToken)
+                                           .POST(BodyPublishers.noBody())
+                                           .build();
+        
+        try
+        {
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+            
+            if ((statusResponse.status = response.statusCode()) == HttpStatus.SC_OK)
+            {
+                System.out.println("response: " + response.body());
+                JSONObject jsonResponse = new JSONObject(response.body());
+                userId.append(jsonResponse.getJSONObject(TAG_DATA).getString(TAG_USER_ID));
+                weblinkId.append(jsonResponse.getJSONObject(TAG_DATA).getString(TAG_WEBLINK_ID));
+            } else 
+            {
+                return false;
+            }
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+            statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
+            statusResponse.description = EM_CLIENT_SEND_GEN_WEBLINK_ID;
+            return false;
+        }
+        return true;
+    }
+    
+    //  
+    // _saveChainData 
+    // 
+    //    A private function to save chain data, associated with an i2c file, in the i2Chain backend.  
+    // 
+    // Return value: 
+    //         True for success 
+    //        False for a failure. In this case errorResponse contains the details about the error. 
+    //
+    
+    private Boolean _saveChainData(String               authToken,      // Input
+                                   JSONObject           chainData,      // Input
+                                   I2cStatusResponse    statusResponse) // Output
+    {
+        System.out.println("_saveChainData");
+        
+        HttpClient client     = HttpClient.newHttpClient();
+        HttpRequest request   = HttpRequest.newBuilder(URI.create(API_SERVER + END_POINT_SAVE_CHAIN_DATA))
+                                           .header(HEADER_AUTHORIZATION, authToken)
+                                           .header(HEADER_CONTENT_TYPE, HEADER_APPLICATION_JSON)
+                                           .POST(BodyPublishers.ofString(chainData.toString()))
+                                           .build();
+        
+        try
+        {
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+            
+            if ((statusResponse.status = response.statusCode()) == HttpStatus.SC_OK)
+            {
+                System.out.println("response: " + response.body());
+                JSONObject jsonResponse = new JSONObject(response.body());
+            } else 
+            {
+                return false;
+            }
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+            statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
+            statusResponse.description = EM_CLIENT_SEND_SAVE_CHAIN_DATA;
             return false;
         }
         return true;
@@ -440,7 +564,7 @@ public class I2cAPIs {
         {
             e.printStackTrace();
             statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
-            statusResponse.description = ERR_MSG_FILE_ENCRYPTION;
+            statusResponse.description = EM_FILE_ENCRYPTION;
             return false;
         }
         return true;
@@ -496,7 +620,7 @@ public class I2cAPIs {
         {
             e.printStackTrace();
             statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
-            statusResponse.description = ERR_MSG_CHECKSUM;
+            statusResponse.description = EM_CHECKSUM;
             return false;
         }
         return true;
@@ -542,7 +666,7 @@ public class I2cAPIs {
             {
                 System.out.println("Issue in creating file: " + infoFile.getName());
                 statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
-                statusResponse.description = ERR_MSG_INFO_FILE_CREATION;
+                statusResponse.description = EM_INFO_FILE_CREATION;
                 return false;
             }
             
@@ -555,7 +679,7 @@ public class I2cAPIs {
             System.out.println("An error occurred while creating file:" + infoFile.getName());
             e.printStackTrace();
             statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
-            statusResponse.description = ERR_MSG_INFO_FILE_CREATION;
+            statusResponse.description = EM_INFO_FILE_CREATION;
             return false;
         }
         
