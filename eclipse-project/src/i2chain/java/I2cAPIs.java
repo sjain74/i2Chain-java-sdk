@@ -181,8 +181,8 @@ public class I2cAPIs {
         }
         
         JSONObject chainData = new JSONObject();
-        chainData.put(TAG_USER_ID, userId);
-        chainData.put(TAG_WEBLINK_ID, weblinkId);
+        chainData.put(TAG_USER_ID, userId.toString());
+        chainData.put(TAG_WEBLINK_ID, weblinkId.toString());
         
         for (int i=0; i<filePaths.length; i++)
         {
@@ -402,7 +402,7 @@ public class I2cAPIs {
             chainData.put(TAG_LOCATION, "local");
             chainData.put(TAG_FILE_TYPE, fileExt);
             chainData.put(TAG_CLASSIFICATION_ID, classification);
-            chainData.put(TAG_LAST_MODIFIED, System.currentTimeMillis());
+            chainData.put(TAG_LAST_MODIFIED, String.valueOf(System.currentTimeMillis()));
         } catch (IOException e) {
             e.printStackTrace();
             statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
@@ -759,7 +759,7 @@ public class I2cAPIs {
             System.out.println("docId: " + docIds[0]);
         } else 
         {
-            System.out.println("_classifyAndChain FAILED");
+            System.out.println("i2c_createWebLink FAILED");
             System.out.println("statusResponse: " + statusResponse.status);
         }
         
