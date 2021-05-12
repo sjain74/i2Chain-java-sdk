@@ -16,6 +16,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
@@ -53,7 +54,7 @@ public class I2cAPIs {
     private final String TAG_JWT_TOKEN                          = "jwtToken";
     private final String TAG_DATA                               = "data";
     private final String TAG_PLAIN_TEXT_DATA_KEY                = "plaintextDataKey";
-    private final String TAG_DOC_ID                             = "docID";
+    private final String TAG_DOC_ID                             = "docId";
     private final String TAG_CHECKSUM                           = "checksum";
     private final String TAG_TYPE                               = "type";
     private final String TAG_FILE_NAME                          = "fileName";
@@ -69,7 +70,6 @@ public class I2cAPIs {
     private final String TAG_CIPHER_TEXT_DATA_KEY               = "cipherTextDataKey";
     private final String TAG_FILE_TYPE                          = "fileType";
     private final String TAG_CLASSIFICATION_ID                  = "classificationId";
-    private final String TAG_LAST_MODIFIED                      = "lastModified";
     
     private final String ENCRYPTION_ALGORITHM                   = "AES/CBC/PKCS5Padding";
     private final String CHECKSUM_SHA1                          = "SHA1";
@@ -154,13 +154,12 @@ public class I2cAPIs {
      *    False for a failure. In this case errorResponse contains the details about the error. 
      */
 
-    public Boolean i2c_createWebLink (String               authToken,       // Input
-                                      String[]             filePaths,       // Input
-                                      String[]             classifications, // Input
-                                      String               i2cFilePath,     // Input
-                                      StringBuilder[]      docIds,          // Output
-                                      StringBuilder        webLink,         // Output
-                                      I2cStatusResponse    statusResponse)  // Output
+    public Boolean i2c_classifyAndChain (String               authToken,       // Input
+                                         String[]             filePaths,       // Input
+                                         String[]             classifications, // Input
+                                         String               i2cFilePath,     // Input
+                                         StringBuilder[]      docIds,          // Output
+                                         I2cStatusResponse    statusResponse)  // Output
 
     {
         System.out.println("i2c_createWebLink"); 
@@ -172,17 +171,7 @@ public class I2cAPIs {
             return false;
         }
         
-        StringBuilder weblinkId = new StringBuilder();
-        StringBuilder userId = new StringBuilder();
-        
-        if (! _getUserWeblinkId(authToken, userId, weblinkId, statusResponse))
-        {
-            return false;
-        }
-        
         JSONObject chainData = new JSONObject();
-        chainData.put(TAG_USER_ID, userId.toString());
-        chainData.put(TAG_WEBLINK_ID, weblinkId.toString());
         
         for (int i=0; i<filePaths.length; i++)
         {
@@ -192,7 +181,7 @@ public class I2cAPIs {
             }
             docIds[i].append(chainData.getString(TAG_DOC_ID));
             
-            if (! _saveChainData(authToken, chainData, webLink, statusResponse))
+            if (! _saveChainData(authToken, chainData, statusResponse))
             {
                 return false;
             }
@@ -220,6 +209,14 @@ public class I2cAPIs {
     {
         // use i2Chain REST API to record sharing of the docId with the recipients
         // if all good, return True, else build errorResponse and return False
+        
+        /* StringBuilder weblinkId = new StringBuilder();
+        StringBuilder userId = new StringBuilder();
+        
+        if (! _getUserWeblinkId(authToken, userId, weblinkId, statusResponse))
+        {
+            return false;
+        } */
         
         return true;
 
@@ -394,15 +391,16 @@ public class I2cAPIs {
         try {
             byte[] fileBuffer;
             fileBuffer = Files.readAllBytes(i2cFile.toPath());
-            chainData.put(TAG_FILE_SIZE, fileBuffer.length);
-            chainData.put(TAG_FILE_BUFFER, fileBuffer);
+            Encoder encoder = Base64.getEncoder();
+            String base64EncFile = encoder.encodeToString(fileBuffer);
+            chainData.put(TAG_FILE_SIZE, base64EncFile.length());
+            chainData.put(TAG_FILE_BUFFER, base64EncFile);
             chainData.put(TAG_FILE_PATH, i2cFile.getParent());
             String fileExt = filePath.substring(filePath.lastIndexOf('.') + 1); 
             chainData.put(TAG_MIME_TYPE, fileExt);
             chainData.put(TAG_LOCATION, "local");
             chainData.put(TAG_FILE_TYPE, fileExt);
-            chainData.put(TAG_CLASSIFICATION_ID, classification);
-            chainData.put(TAG_LAST_MODIFIED, String.valueOf(System.currentTimeMillis()));
+            chainData.put(TAG_CLASSIFICATION_ID, "5f60722c640fe94dbd7fca66"); // TODO: classification
         } catch (IOException e) {
             e.printStackTrace();
             statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
@@ -410,7 +408,16 @@ public class I2cAPIs {
             return false;
         }
         
-        System.out.println("chainData: " + chainData.toString());
+        System.out.println("chainData.TAG_CIPHER_TEXT: " + chainData.getJSONArray(TAG_CIPHER_TEXT));
+        System.out.println("chainData.TAG_FILE_ID: " + chainData.getString(TAG_FILE_ID));
+        System.out.println("chainData.TAG_FILE_NAME: " + chainData.getString(TAG_FILE_NAME));
+        System.out.println("chainData.TAG_FILE_BUFFER: " + "<file buffer>");
+        System.out.println("chainData.TAG_FILE_SIZE: " + chainData.getInt(TAG_FILE_SIZE));
+        System.out.println("chainData.TAG_FILE_PATH: " + chainData.getString(TAG_FILE_PATH));
+        System.out.println("chainData.TAG_MIME_TYPE: " + chainData.getString(TAG_MIME_TYPE));
+        System.out.println("chainData.TAG_LOCATION: " + chainData.getString(TAG_LOCATION));
+        System.out.println("chainData.TAG_FILE_TYPE: " + chainData.getString(TAG_FILE_TYPE));
+        System.out.println("chainData.TAG_CLASSIFICATION_ID: " + chainData.getString(TAG_CLASSIFICATION_ID));
         return true;
     }
     
@@ -520,7 +527,6 @@ public class I2cAPIs {
     
     private Boolean _saveChainData(String               authToken,      // Input
                                    JSONObject           chainData,      // Input
-                                   StringBuilder        webLink,        // Output
                                    I2cStatusResponse    statusResponse) // Output
     {
         System.out.println("_saveChainData");
@@ -749,10 +755,9 @@ public class I2cAPIs {
         String[] filePaths = {"/Users/sanjain/Downloads/sanjay_jain_resume.pdf"};
         String[] classifications = {"Secret"};
         StringBuilder[] docIds = {new StringBuilder()};
-        StringBuilder webLink = new StringBuilder();
         
-        if (i2cAPIs.i2c_createWebLink (authToken.toString(), filePaths, classifications, "/Users/sanjain/Downloads",
-                                       docIds, webLink, statusResponse))
+        if (i2cAPIs.i2c_classifyAndChain (authToken.toString(), filePaths, classifications, "/Users/sanjain/Downloads",
+                                          docIds, statusResponse))
         {
             System.out.println("i2c_createWebLink SUCCEEDED");
             System.out.println("statusResponse: " + statusResponse.status);
