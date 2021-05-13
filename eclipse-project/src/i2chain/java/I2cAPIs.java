@@ -28,6 +28,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import org.apache.hc.core5.http.HttpStatus; 
@@ -72,6 +73,13 @@ public class I2cAPIs {
     private final String TAG_CIPHER_TEXT_DATA_KEY               = "cipherTextDataKey";
     private final String TAG_FILE_TYPE                          = "fileType";
     private final String TAG_CLASSIFICATION_ID                  = "classificationId";
+    
+    private final String TAG_TXN_ACTION                         = "actionName";
+    private final String TAG_TXN_BY                             = "by";
+    private final String TAG_TXN_RECIPIENT                      = "recipientId";
+    private final String TAG_TXN_ACTION_SUCCESS                 = "actionSuccess";
+    private final String TAG_TXN_FAILED_REASON                  = "failedReason";
+    private final String TAG_TXN_TIME                           = "transactionTime";
     
     private final String ENCRYPTION_ALGORITHM                   = "AES/CBC/PKCS5Padding";
     private final String CHECKSUM_SHA1                          = "SHA1";
@@ -266,6 +274,21 @@ public class I2cAPIs {
             if ((statusResponse.status = response.statusCode()) == HttpStatus.SC_OK)
             {
                 System.out.println("response: " + response.body());
+                JSONObject jsonResponse = new JSONObject(response.body());
+                JSONArray txnData = jsonResponse.getJSONArray(TAG_DATA);
+                for (int i=0; i<txnData.length(); i++)
+                {
+                    I2cTransactionLog txnLog = new I2cTransactionLog();
+                    
+                    txnLog.action = txnData.getJSONObject(i).getString(TAG_TXN_ACTION);
+                    // TODO: txnLog.by = txnData.getJSONObject(i).getString(TAG_TXN_BY);
+                    txnLog.recipient = txnData.getJSONObject(i).getString(TAG_TXN_RECIPIENT);
+                    txnLog.success = txnData.getJSONObject(i).getBoolean(TAG_TXN_ACTION_SUCCESS);
+                    txnLog.failedReason = txnData.getJSONObject(i).getString(TAG_TXN_FAILED_REASON);
+                    txnLog.time = txnData.getJSONObject(i).getString(TAG_TXN_TIME);
+                    
+                    transactionLogs.add(txnLog);
+                }
                 return true;
             } else 
             {
@@ -796,6 +819,11 @@ public class I2cAPIs {
             System.out.println("i2c_getTransactionLogs SUCCEEDED");
             System.out.println("statusResponse: " + statusResponse.status);
             System.out.println("docId: " + docIds[0]);
+            
+            for (int i=0; i<txnLogs.size(); i++)
+            {
+                txnLogs.get(i).debugPrint();
+            }
         } else 
         {
             System.out.println("i2c_getTransactionLogs FAILED");
