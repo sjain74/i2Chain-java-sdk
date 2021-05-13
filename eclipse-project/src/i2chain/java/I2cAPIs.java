@@ -14,6 +14,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Encoder;
@@ -41,6 +42,7 @@ public class I2cAPIs {
     private final String END_POINT_LOGOUT                       = "auth/logout";
     private final String END_POINT_GENERATE_WEBLINK_ID          = "file/generate/threadId";
     private final String END_POINT_SAVE_CHAIN_DATA              = "file/saveChainData";
+    private final String END_POINT_GET_TXN_LOGS                 = "transaction/getAllList";
     
     private final String HEADER_CONTENT_TYPE                    = "Content-Type";
     private final String HEADER_API_KEY                         = "x-api-key";
@@ -83,6 +85,7 @@ public class I2cAPIs {
     private final String EM_CLIENT_SEND_GEN_DATA_KEY            = "Sending Generate Data Key HTTP request failed.";
     private final String EM_CLIENT_SEND_GEN_WEBLINK_ID          = "Sending Generate Weblink ID HTTP request failed.";
     private final String EM_CLIENT_SEND_SAVE_CHAIN_DATA         = "Sending Save Chain Data HTTP request failed.";
+    private final String EM_CLIENT_SEND_GET_TXN_LOGS            = "Sending Get Transaction Logs HTTP request failed.";
     
     private final String EM_FILE_ENCRYPTION                     = "File encryption failed.";
     private final String EM_CHECKSUM                            = "File checksum computation failed.";
@@ -232,40 +235,54 @@ public class I2cAPIs {
      *    False for a failure. In this case errorResponse contains the details about the error. 
      */
 
-    public Boolean i2c_getTransactionLogs (String                 authToken,            // Input
-                                           String                 by,                   // Input
-                                           String                 docId,                // Input
-                                           String                 recipient,            // Input
-                                           String                 fromDate,             // Input
-                                           String                 toDate,               // Input
-                                           String                 classification,       // Input
-                                           I2cTransactionLog[]    transactionLogs,      // Output
-                                           I2cStatusResponse      statusResponse)       // Output
+    public Boolean i2c_getTransactionLogs (String                   authToken,            // Input
+                                           String                   by,                   // Input
+                                           String                   docId,                // Input
+                                           String                   recipient,            // Input
+                                           String                   fromDate,             // Input
+                                           String                   toDate,               // Input
+                                           String                   classification,       // Input
+                                           List<I2cTransactionLog>  transactionLogs,      // Output
+                                           I2cStatusResponse        statusResponse)       // Output
 
     {
-        //         At least one of “by”, “docId”, and “recipient” should be specified 
-        //         A filter is constructed by ANDing the parameters that are specified, e.g., 
-        //             - return all the transaction logs where by=john@cb.com AND docId=123xyz456 
-        //                AND recipient=tom@equifax.com 
-        //             - return all the transaction logs where by=john@smith.com AND  
-        //                docId=123xyz456 
-        //             - return all the transaction logs where docId=123xyz456  
-        // 
-        //         The transaction logs are returned in transactionLogs array from latest to oldest order 
-        // 
-        //         It is made sure that the authenticated user (authToken) has access to the logs that are  
-        //         returned in the result set. I.e. even if some transaction logs satisfy the filter they may  
-        //        not appear in the result set if the caller of this function does not have access to those  
-        //        transaction logs. 
+        System.out.println("i2c_getTransactionLogs");
         
-        // if all good, return True, else build errorResponse and return False
-        
-        return true;
+        HttpClient client = HttpClient.newHttpClient();
+        String uriString = API_SERVER + END_POINT_GET_TXN_LOGS;
+        if (docId != null)
+        {
+            uriString += "?docId=" + docId;
+        }
+        HttpRequest request = HttpRequest.newBuilder(URI.create(uriString))
+                                         .header(HEADER_AUTHORIZATION, authToken)
+                                         .GET()
+                                         .build();
+
+        try
+        {
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+            
+            if ((statusResponse.status = response.statusCode()) == HttpStatus.SC_OK)
+            {
+                System.out.println("response: " + response.body());
+                return true;
+            } else 
+            {
+                return false;
+            }
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+            statusResponse.status = HttpStatus.SC_METHOD_FAILURE;
+            statusResponse.description = EM_CLIENT_SEND_GET_TXN_LOGS;
+            return false;
+        }
 
     } 
     
     /**  
-     * i2c_getTransactionLogs 
+     * i2c_logout 
      * 
      * SDK function provided by i2Chain to logout a user from the i2Chain backend.
      *     
@@ -453,7 +470,9 @@ public class I2cAPIs {
                 System.out.println("response: " + response.body());
                 JSONObject jsonResponse = new JSONObject(response.body());
                 plaintextDataKey.append(jsonResponse.getJSONObject(TAG_DATA).getString(TAG_PLAIN_TEXT_DATA_KEY));
-                chainData.put(TAG_CIPHER_TEXT, jsonResponse.getJSONObject(TAG_DATA).getJSONObject(TAG_CIPHER_TEXT_DATA_KEY).getJSONArray(TAG_DATA));
+                chainData.put(TAG_CIPHER_TEXT, jsonResponse.getJSONObject(TAG_DATA)
+                                                           .getJSONObject(TAG_CIPHER_TEXT_DATA_KEY)
+                                                           .getJSONArray(TAG_DATA));
             } else 
             {
                 return false;
@@ -765,6 +784,21 @@ public class I2cAPIs {
         } else 
         {
             System.out.println("i2c_createWebLink FAILED");
+            System.out.println("statusResponse: " + statusResponse.status);
+        }
+        
+        System.out.println();
+        
+        ArrayList<I2cTransactionLog> txnLogs = new ArrayList<>();
+        if (i2cAPIs.i2c_getTransactionLogs (authToken.toString(), null, docIds[0].toString(), null, null, null,
+                                            null, txnLogs, statusResponse))
+        {
+            System.out.println("i2c_getTransactionLogs SUCCEEDED");
+            System.out.println("statusResponse: " + statusResponse.status);
+            System.out.println("docId: " + docIds[0]);
+        } else 
+        {
+            System.out.println("i2c_getTransactionLogs FAILED");
             System.out.println("statusResponse: " + statusResponse.status);
         }
         
